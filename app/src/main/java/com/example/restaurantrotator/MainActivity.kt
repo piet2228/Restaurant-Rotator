@@ -10,13 +10,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
@@ -71,7 +69,7 @@ data class restaurantFormData(
     val address: String = "",
     val description: String = "",
     val rating: Float = 0f,
-    val weeklySchedule: List<OperatingHours> = DayOfWeek.values().map() { dayOfWeek ->
+    val weeklySchedule: List<OperatingHours> = DayOfWeek.entries.map() { dayOfWeek ->
         OperatingHours(dayOfWeek, LocalTime.MIN, LocalTime.MAX)
     }
 )
@@ -171,7 +169,7 @@ fun SchedulePicker(viewModel: RestaurantViewModel) {
                 TimePickerDialog(
                     onDismiss = { displayOpeningTimeDialog.value = false },
                     onConfirm = {
-                        val newWeeklySchedule = DayOfWeek.values().map() { dayOfWeek ->
+                        val newWeeklySchedule = DayOfWeek.entries.map() { dayOfWeek ->
                             OperatingHours(
                                 dayOfWeek,
                                 LocalTime.of(openingPickerState.hour, openingPickerState.minute),
@@ -188,7 +186,7 @@ fun SchedulePicker(viewModel: RestaurantViewModel) {
                 TimePickerDialog(
                     onDismiss = { displayClosingTimeDialog.value = false },
                     onConfirm = {
-                        val newWeeklySchedule = DayOfWeek.values().map() { dayOfWeek ->
+                        val newWeeklySchedule = DayOfWeek.entries.map() { dayOfWeek ->
                             OperatingHours(
                                 dayOfWeek,
                                 weeklySchedule.get(dayOfWeek.ordinal).openTime,

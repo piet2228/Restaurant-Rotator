@@ -202,8 +202,6 @@ fun SchedulePicker(viewModel: RestaurantViewModel) {
                 )
             }
         }
-
-
         weeklySchedule.forEach() { day ->
             val displayOpeningTimeDialog = remember { mutableStateOf(false) }
             val displayClosingTimeDialog = remember { mutableStateOf(false) }

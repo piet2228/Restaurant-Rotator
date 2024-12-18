@@ -2,6 +2,7 @@
 
 package com.example.restaurantrotator
 
+import android.R
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -77,6 +78,14 @@ data class restaurantFormData(
 class RestaurantViewModel : ViewModel() {
     private val _restaurantData = MutableStateFlow(restaurantFormData())
     val restaurantData: StateFlow<restaurantFormData> = _restaurantData.asStateFlow()
+    private val _displayTimeDialog = MutableStateFlow(false)
+    private val _dialogForOpen = MutableStateFlow(false)
+    private val _dialogDay = MutableStateFlow(DayOfWeek.MONDAY)
+
+    val displayTimeDialog: StateFlow<Boolean> = _displayTimeDialog.asStateFlow()
+    val dialogForOpen: StateFlow<Boolean> = _dialogForOpen.asStateFlow()
+    val dialogDay: StateFlow<DayOfWeek> = _dialogDay.asStateFlow()
+
     fun updateName(name: String) {
         _restaurantData.value = _restaurantData.value.copy(name = name)
     }
@@ -96,6 +105,32 @@ class RestaurantViewModel : ViewModel() {
     fun updateWeeklySchedule(weeklySchedule: List<OperatingHours>) {
         _restaurantData.value = _restaurantData.value.copy(weeklySchedule = weeklySchedule)
     }
+    fun openTimeDialog(dayOfWeek: DayOfWeek, changeOpeningTime: Boolean){
+        _displayTimeDialog.value = true
+        _dialogDay.value = dayOfWeek
+        _dialogForOpen.value = changeOpeningTime
+        val hours = restaurantData.value.weeklySchedule[dayOfWeek.ordinal]
+    }
+    fun confirmTimeDialog(timePickerState: TimePickerState){
+        val weeklySchedule = restaurantData.value.weeklySchedule;
+        if (_dialogForOpen.value) {
+            val oldHours = restaurantData.value.weeklySchedule[_dialogDay.value.ordinal];
+            val newHours = oldHours.copy(openTime = LocalTime.of(timePickerState.hour, timePickerState.minute))
+            val newSchedule = updateElementInList(weeklySchedule,dialogDay.value.ordinal, newHours)
+            updateWeeklySchedule(newSchedule)
+        }
+        else {
+            val oldHours = restaurantData.value.weeklySchedule[_dialogDay.value.ordinal];
+            val newHours = oldHours.copy(closeTime = LocalTime.of(timePickerState.hour, timePickerState.minute))
+            val newSchedule = updateElementInList(weeklySchedule,dialogDay.value.ordinal, newHours)
+            updateWeeklySchedule(newSchedule)
+        }
+        _displayTimeDialog.value = false
+    }
+    fun dismissTimeDialog(){
+        _displayTimeDialog.value = false
+    }
+
 
 }
 
@@ -145,61 +180,7 @@ fun SchedulePicker(viewModel: RestaurantViewModel) {
             )
         }
         //buttons to change operating hours for every day
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround
-        ) {
-            val displayOpeningTimeDialog = remember { mutableStateOf(false) }
-            val displayClosingTimeDialog = remember { mutableStateOf(false) }
-            val openingPickerState = rememberTimePickerState()
-            val closingPickerState = rememberTimePickerState()
-
-            Spacer(modifier = Modifier.weight(0.7f))
-            OutlinedButton(
-                modifier = Modifier.weight(1f),
-                onClick = { displayOpeningTimeDialog.value = true }) {
-                Text("Set All Open")
-            }
-            OutlinedButton(
-                modifier = Modifier.weight(1f),
-                onClick = { displayClosingTimeDialog.value = true }) {
-                Text("Set All Close")
-            }
-            if (displayOpeningTimeDialog.value) {
-                TimePickerDialog(
-                    onDismiss = { displayOpeningTimeDialog.value = false },
-                    onConfirm = {
-                        val newWeeklySchedule = DayOfWeek.entries.map() { dayOfWeek ->
-                            OperatingHours(
-                                dayOfWeek,
-                                LocalTime.of(openingPickerState.hour, openingPickerState.minute),
-                                weeklySchedule.get(dayOfWeek.ordinal).closeTime
-                            )
-                        }
-                        viewModel.updateWeeklySchedule(newWeeklySchedule)
-                        displayOpeningTimeDialog.value = false
-                    },
-                    content = { TimePicker(state = openingPickerState) }
-                )
-            }
-            if (displayClosingTimeDialog.value) {
-                TimePickerDialog(
-                    onDismiss = { displayClosingTimeDialog.value = false },
-                    onConfirm = {
-                        val newWeeklySchedule = DayOfWeek.entries.map() { dayOfWeek ->
-                            OperatingHours(
-                                dayOfWeek,
-                                weeklySchedule.get(dayOfWeek.ordinal).openTime,
-                                LocalTime.of(closingPickerState.hour, closingPickerState.minute),
-                            )
-                        }
-                        viewModel.updateWeeklySchedule(newWeeklySchedule)
-                        displayClosingTimeDialog.value = false
-                    },
-                    content = { TimePicker(state = closingPickerState) }
-                )
-            }
-        }
+        changeAllButtons(weeklySchedule, viewModel)
         weeklySchedule.forEach() { day ->
             val displayOpeningTimeDialog = remember { mutableStateOf(false) }
             val displayClosingTimeDialog = remember { mutableStateOf(false) }
@@ -216,50 +197,90 @@ fun SchedulePicker(viewModel: RestaurantViewModel) {
                     textAlign = TextAlign.Center
                 )
                 FilledTonalButton(
-                    onClick = { displayOpeningTimeDialog.value = true },
+                    onClick = { viewModel.openTimeDialog(day.dayOfWeek,true) },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(text = "${day.openTime.format(DateTimeFormatter.ofPattern("HH:mm"))}")
                 }
                 FilledTonalButton(
-                    onClick = { displayClosingTimeDialog.value = true },
+                    onClick = { viewModel.openTimeDialog(day.dayOfWeek, false)},
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(text = "${day.closeTime.format(DateTimeFormatter.ofPattern("HH:mm"))}")
                 }
-                if (displayOpeningTimeDialog.value) {
-                    TimePickerDialog(
-                        onDismiss = { displayOpeningTimeDialog.value = false },
-                        onConfirm = {
-                            val newWeeklySchedule = updateWeeklyScheduleFromPicker(
-                                weeklySchedule,
-                                day.dayOfWeek,
-                                openingPickerState,
-                                closingPickerState
-                            )
-                            viewModel.updateWeeklySchedule(newWeeklySchedule)
-                            displayOpeningTimeDialog.value = false
-                        },
-                        content = { TimePicker(state = openingPickerState) }
-                    )
-                }
-                if (displayClosingTimeDialog.value) {
-                    TimePickerDialog(
-                        onDismiss = { displayClosingTimeDialog.value = false },
-                        onConfirm = {
-                            val newWeeklySchedule = updateWeeklyScheduleFromPicker(
-                                weeklySchedule,
-                                day.dayOfWeek,
-                                openingPickerState,
-                                closingPickerState
-                            )
-                            viewModel.updateWeeklySchedule(newWeeklySchedule)
-                            displayClosingTimeDialog.value = false
-                        },
-                        content = { TimePicker(state = closingPickerState) }
-                    )
-                }
             }
+        }
+        //TODO: Gemini lied. use the normal way to keep timepickerstate, then update the viewmodel anytime it changes?
+        if (viewModel.displayTimeDialog.collectAsState().value){
+            val timePickerState = rememberTimePickerState(0,0,false)
+            TimePickerDialog(
+                onDismiss = {viewModel.dismissTimeDialog()},
+                onConfirm = {viewModel.confirmTimeDialog(timePickerState)},
+            ) {
+                TimePicker(state=timePickerState)
+            }
+        }
+    }
+}
+
+@Composable
+private fun changeAllButtons(
+    weeklySchedule: List<OperatingHours>,
+    viewModel: RestaurantViewModel
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceAround
+    ) {
+        val displayOpeningTimeDialog = remember { mutableStateOf(false) }
+        val displayClosingTimeDialog = remember { mutableStateOf(false) }
+        val openingPickerState = rememberTimePickerState()
+        val closingPickerState = rememberTimePickerState()
+
+        Spacer(modifier = Modifier.weight(0.7f))
+        OutlinedButton(
+            modifier = Modifier.weight(1f),
+            onClick = { displayOpeningTimeDialog.value = true }) {
+            Text("Set All Open")
+        }
+        OutlinedButton(
+            modifier = Modifier.weight(1f),
+            onClick = { displayClosingTimeDialog.value = true }) {
+            Text("Set All Close")
+        }
+        if (displayOpeningTimeDialog.value) {
+            TimePickerDialog(
+                onDismiss = { displayOpeningTimeDialog.value = false },
+                onConfirm = {
+                    val newWeeklySchedule = DayOfWeek.entries.map() { dayOfWeek ->
+                        OperatingHours(
+                            dayOfWeek,
+                            LocalTime.of(openingPickerState.hour, openingPickerState.minute),
+                            weeklySchedule.get(dayOfWeek.ordinal).closeTime
+                        )
+                    }
+                    viewModel.updateWeeklySchedule(newWeeklySchedule)
+                    displayOpeningTimeDialog.value = false
+                },
+                content = { TimePicker(state = openingPickerState) }
+            )
+        }
+        if (displayClosingTimeDialog.value) {
+            TimePickerDialog(
+                onDismiss = { displayClosingTimeDialog.value = false },
+                onConfirm = {
+                    val newWeeklySchedule = DayOfWeek.entries.map() { dayOfWeek ->
+                        OperatingHours(
+                            dayOfWeek,
+                            weeklySchedule.get(dayOfWeek.ordinal).openTime,
+                            LocalTime.of(closingPickerState.hour, closingPickerState.minute),
+                        )
+                    }
+                    viewModel.updateWeeklySchedule(newWeeklySchedule)
+                    displayClosingTimeDialog.value = false
+                },
+                content = { TimePicker(state = closingPickerState) }
+            )
         }
     }
 }

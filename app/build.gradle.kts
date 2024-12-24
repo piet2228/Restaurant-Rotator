@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
+    id("kotlin-kapt")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -63,6 +65,12 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:19.0.0")
     implementation ("com.google.android.gms:play-services-location:21.3.0")
     implementation("com.google.maps.android:maps-compose:6.2.1")
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    kapt("com.google.dagger:hilt-android-compiler:2.51.1")
+}
+kapt {
+    correctErrorTypes = true
 }
 secrets {
     // To add your Maps API key to this project:

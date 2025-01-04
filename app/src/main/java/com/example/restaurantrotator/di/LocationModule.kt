@@ -1,4 +1,4 @@
-package com.example.restaurantrotator
+package com.example.restaurantrotator.di
 
 import android.content.Context
 import com.google.android.gms.location.FusedLocationProviderClient

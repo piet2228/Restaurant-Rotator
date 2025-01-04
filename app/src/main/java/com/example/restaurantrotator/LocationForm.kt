@@ -5,11 +5,13 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -35,6 +37,7 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.places.api.Places
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
@@ -51,6 +54,18 @@ import javax.inject.Inject
 class LocationForm : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Define a variable to hold the Places API key.
+        val apiKey = BuildConfig.MAPS_API_KEY
+        // Log an error if apiKey is not set.
+        if (apiKey.isEmpty() || apiKey == "DEFAULT_API_KEY") {
+            Log.e("Places test", "No api key")
+            finish()
+            return
+        }
+        // Initialize the SDK
+        Places.initializeWithNewPlacesApiEnabled(applicationContext, apiKey)
+        // Create a new PlacesClient instance
+        val placesClient = Places.createClient(this)
         enableEdgeToEdge()
         setContent {
             MainContent()
@@ -134,21 +149,27 @@ fun MainContent(
                 .padding(innerPadding),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState
-            ) {
-                Marker(
-                    state = singaporeMarkerState,
-                    title = "Singapore",
-                    snippet = "Marker in Singapore"
-                )
+            Column(){
+                Row {
+                    
+                }
+                GoogleMap(
+                    modifier = Modifier.fillMaxSize(),
+                    cameraPositionState = cameraPositionState
+                ) {
+                    Marker(
+                        state = singaporeMarkerState,
+                        title = "Singapore",
+                        snippet = "Marker in Singapore"
+                    )
+                }
             }
         }
+
     }
 }
 
-@Preview(showBackground = true)
+@Preview
 @Composable
 fun GreetingPreview() {
     RestaurantRotatorTheme {

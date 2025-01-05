@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
 import android.util.Log
+import android.widget.AutoCompleteTextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -23,6 +24,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -99,11 +104,11 @@ class locationViewModel @Inject constructor(
     private fun hasLocationPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
             context,
-            android.Manifest.permission.ACCESS_FINE_LOCATION
+            Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED ||
         ContextCompat.checkSelfPermission(
             context,
-            android.Manifest.permission.ACCESS_COARSE_LOCATION
+            Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
     }
 }
@@ -149,20 +154,29 @@ fun MainContent(
                 .padding(innerPadding),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Column(){
-                Row {
-                    
-                }
-                GoogleMap(
-                    modifier = Modifier.fillMaxSize(),
-                    cameraPositionState = cameraPositionState
-                ) {
-                    Marker(
-                        state = singaporeMarkerState,
-                        title = "Singapore",
-                        snippet = "Marker in Singapore"
-                    )
-                }
+            var addrText by remember { mutableStateOf("") }
+            var expanded by remember { mutableStateOf(false)}
+            TextFieldWithDropdown(
+                modifier = Modifier.fillMaxWidth(),
+                value = addrText,
+                setValue = {
+                    addrText = it
+                    expanded= true
+                },
+                onDismissRequest = {expanded = false},
+                dropDownExpanded = expanded,
+                list = listOf("ONE", "TWO"),
+                label = "Address",
+            )
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState
+            ) {
+                Marker(
+                    state = singaporeMarkerState,
+                    title = "Singapore",
+                    snippet = "Marker in Singapore"
+                )
             }
         }
 

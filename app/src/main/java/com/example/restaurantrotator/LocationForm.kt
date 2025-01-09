@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,13 +37,16 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.restaurantrotator.repository.PlaceRepository
 import com.example.restaurantrotator.ui.theme.RestaurantRotatorTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
@@ -50,9 +54,12 @@ import com.google.maps.android.compose.rememberMarkerState
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -80,10 +87,23 @@ class LocationForm : ComponentActivity() {
 @HiltViewModel
 class locationViewModel @Inject constructor(
     private val fusedLocationProviderClient: FusedLocationProviderClient,
+    private val placeRepository: PlaceRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
-    val _location = MutableStateFlow<Location?>(null)
-    private val location : StateFlow<Location?> = _location.asStateFlow()
+    private val _location = MutableStateFlow<Location?>(null)
+    private val _autoCompleteSuggestions = MutableStateFlow<List<AutocompletePrediction>>(emptyList())
+    private val _searchText = MutableStateFlow("")
+    val location : StateFlow<Location?> = _location.asStateFlow()
+    val autoCompleteSuggestions: StateFlow<List<AutocompletePrediction>> = _autoCompleteSuggestions.asStateFlow()
+    val searchText = _searchText.asStateFlow()
+    fun updateSearchText(string: String){
+        _searchText.value = string
+        viewModelScope.launch{
+            launch{
+                updateAutoCompleteSuggestions(string)
+            }
+        }
+    }
     //Returns false if permission check fails
     fun getLocation(): Boolean{
         if (ActivityCompat.checkSelfPermission(
@@ -110,6 +130,10 @@ class locationViewModel @Inject constructor(
             context,
             Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
+    }
+    suspend fun updateAutoCompleteSuggestions(input: String){
+        val results = placeRepository.getAutoCompletePredictions(input)
+        _autoCompleteSuggestions.value = results
     }
 }
 //TODO: request location perms in UI?
@@ -154,18 +178,25 @@ fun MainContent(
                 .padding(innerPadding),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            var addrText by remember { mutableStateOf("") }
             var expanded by remember { mutableStateOf(false)}
+            val searchText = viewModel.searchText.collectAsState()
+            val suggestions = viewModel.autoCompleteSuggestions.collectAsState()
+            val suggestionsAsListOfStrings = suggestions.value
+                .take(5)
+                .map {
+                    item ->
+                    item.getPrimaryText(null).toString()
+                }
             TextFieldWithDropdown(
                 modifier = Modifier.fillMaxWidth(),
-                value = addrText,
+                value = searchText.value,
                 setValue = {
-                    addrText = it
+                    viewModel.updateSearchText(it)
                     expanded= true
                 },
                 onDismissRequest = {expanded = false},
                 dropDownExpanded = expanded,
-                list = listOf("ONE", "TWO"),
+                list = suggestionsAsListOfStrings,
                 label = "Address",
             )
             GoogleMap(

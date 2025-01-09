@@ -69,6 +69,8 @@ dependencies {
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
     kapt("com.google.dagger:hilt-android-compiler:2.51.1")
     implementation("com.google.android.libraries.places:places:3.5.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.0")
     //implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.0.0")) //TODO: sync with kotlin version
 
 }

@@ -20,6 +20,7 @@ fun TextFieldWithDropdown(
     modifier: Modifier = Modifier,
     value: String,
     setValue: (String) -> Unit,
+    onItemSelect: (String, Int) -> Unit,
     onDismissRequest: () -> Unit,
     dropDownExpanded: Boolean,
     list: List<String>,
@@ -46,10 +47,10 @@ fun TextFieldWithDropdown(
             ),
             onDismissRequest = onDismissRequest
         ) {
-            list.forEach { text ->
+            list.forEachIndexed { i, text ->
                 DropdownMenuItem(
                     onClick = {
-                        setValue(text)
+                        onItemSelect(text, i)
                     },
                     text = {Text(text)}
                 )
@@ -70,6 +71,10 @@ fun preview() {
             text.value = it
             dropDownExpanded.value = true
        },
+        onItemSelect = {str, i->
+            text.value = str
+            dropDownExpanded.value = true
+        },
         onDismissRequest = {dropDownExpanded.value = false},
         dropDownExpanded = dropDownExpanded.value,
         list = listOf("AAA", "BBB", "CCC"),

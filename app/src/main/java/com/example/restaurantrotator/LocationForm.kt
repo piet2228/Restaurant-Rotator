@@ -47,6 +47,7 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
+import com.google.android.libraries.places.api.model.Place
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
@@ -93,9 +94,13 @@ class locationViewModel @Inject constructor(
     private val _location = MutableStateFlow<Location?>(null)
     private val _autoCompleteSuggestions = MutableStateFlow<List<AutocompletePrediction>>(emptyList())
     private val _searchText = MutableStateFlow("")
+    private val _suggestedPlace = MutableStateFlow(Place.builder().build())
+
     val location : StateFlow<Location?> = _location.asStateFlow()
     val autoCompleteSuggestions: StateFlow<List<AutocompletePrediction>> = _autoCompleteSuggestions.asStateFlow()
     val searchText = _searchText.asStateFlow()
+    val suggestedPlace = _suggestedPlace.asStateFlow()
+
     fun updateSearchText(string: String){
         _searchText.value = string
         viewModelScope.launch{
@@ -134,6 +139,14 @@ class locationViewModel @Inject constructor(
     suspend fun updateAutoCompleteSuggestions(input: String){
         val results = placeRepository.getAutoCompletePredictions(input)
         _autoCompleteSuggestions.value = results
+    }
+    fun updateSuggestedPlace(prediction: AutocompletePrediction){
+        viewModelScope.launch{
+            val result = placeRepository.getPlaceDetails(prediction.placeId)
+            if (result != null){
+                _suggestedPlace.value = result
+            }
+        }
     }
 }
 //TODO: request location perms in UI?
@@ -192,6 +205,11 @@ fun MainContent(
                 value = searchText.value,
                 setValue = {
                     viewModel.updateSearchText(it)
+                    expanded= true
+                },
+                onItemSelect = { str, i ->
+                    viewModel.updateSuggestedPlace(suggestions.value[i])
+                    viewModel.updateSearchText(str)
                     expanded= true
                 },
                 onDismissRequest = {expanded = false},

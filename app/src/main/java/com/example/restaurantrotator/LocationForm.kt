@@ -11,6 +11,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +19,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -30,7 +34,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
@@ -222,29 +229,50 @@ fun MainContent(
                     item ->
                     item.getPrimaryText(null).toString()
                 }
-            TextFieldWithDropdown(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                value = searchText.value,
-                setValue = {
-                    viewModel.updateSearchText(it)
-                },
-                onItemSelect = { string, i ->
-                    viewModel.onDropDownSelect(string, i)
-                },
-                onDismissRequest = {viewModel.onDismiss()},
-                dropDownExpanded = expanded.value,
-                list = suggestionsAsListOfStrings,
-                label = "Address",
-            )
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = viewModel.cameraState.collectAsState().value
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Marker(
-                    state = viewModel.markerState.collectAsState().value,
-                    title = "Current Place",
-                    snippet = "Enter a valid address to change"
+                TextFieldWithDropdown(
+                    modifier = Modifier.weight(9f),
+                    value = searchText.value,
+                    setValue = {
+                        viewModel.updateSearchText(it)
+                    },
+                    onItemSelect = { string, i ->
+                        viewModel.onDropDownSelect(string, i)
+                    },
+                    onDismissRequest = { viewModel.onDismiss() },
+                    dropDownExpanded = expanded.value,
+                    list = suggestionsAsListOfStrings,
+                    label = "Address",
                 )
+
+            }
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                GoogleMap(
+                    modifier = Modifier.fillMaxSize(),
+                    cameraPositionState = viewModel.cameraState.collectAsState().value,
+                ) {
+                    Marker(
+                        state = viewModel.markerState.collectAsState().value,
+                        title = "Current Place",
+                        snippet = "Enter a valid address to change"
+                    )
+                }
+                FilledIconButton(
+                    onClick = {},
+                    modifier = Modifier.align(Alignment.TopEnd),
+                    enabled = true
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_my_location_24),
+                        contentDescription = "My Location"
+                    )
+                }
+
             }
         }
 

@@ -51,8 +51,10 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.android.libraries.places.api.model.Place
+import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import dagger.hilt.android.AndroidEntryPoint
@@ -99,12 +101,16 @@ class locationViewModel @Inject constructor(
     private val _searchText = MutableStateFlow(TextFieldValue())
     private val _suggestedPlace = MutableStateFlow(Place.builder().build())
     private val _expanded = MutableStateFlow(false)
+    private val _cameraState = MutableStateFlow(CameraPositionState())
+    private val _markerState = MutableStateFlow(MarkerState())
 
     val location : StateFlow<Location?> = _location.asStateFlow()
     val autoCompleteSuggestions: StateFlow<List<AutocompletePrediction>> = _autoCompleteSuggestions.asStateFlow()
     val searchText = _searchText.asStateFlow()
     val suggestedPlace = _suggestedPlace.asStateFlow()
     val expanded = _expanded.asStateFlow()
+    val cameraState = _cameraState.asStateFlow()
+    val markerState = _markerState.asStateFlow()
 
     fun updateSearchText(textFieldValue: TextFieldValue){
         _searchText.value = textFieldValue
@@ -124,6 +130,8 @@ class locationViewModel @Inject constructor(
             val result = placeRepository.getPlaceDetails(prediction.placeId)
             if (result != null){
                 _suggestedPlace.value = result
+                _cameraState.value = CameraPositionState(position = CameraPosition(result.latLng,15f,0f,0f))
+                _markerState.value = MarkerState(position = result.latLng)
             }
         }
     }
@@ -230,12 +238,12 @@ fun MainContent(
             )
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState
+                cameraPositionState = viewModel.cameraState.collectAsState().value
             ) {
                 Marker(
-                    state = singaporeMarkerState,
-                    title = "Singapore",
-                    snippet = "Marker in Singapore"
+                    state = viewModel.markerState.collectAsState().value,
+                    title = "Current Place",
+                    snippet = "Enter a valid address to change"
                 )
             }
         }

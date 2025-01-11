@@ -11,6 +11,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.window.PopupProperties
 
@@ -18,8 +20,8 @@ import androidx.compose.ui.window.PopupProperties
 @Composable
 fun TextFieldWithDropdown(
     modifier: Modifier = Modifier,
-    value: String,
-    setValue: (String) -> Unit,
+    value: TextFieldValue,
+    setValue: (TextFieldValue) -> Unit,
     onItemSelect: (String, Int) -> Unit,
     onDismissRequest: () -> Unit,
     dropDownExpanded: Boolean,
@@ -62,17 +64,20 @@ fun TextFieldWithDropdown(
 @Preview
 @Composable
 fun preview() {
-    var text = remember { mutableStateOf("HI") }
-    var dropDownExpanded  = remember { mutableStateOf(false) }
+    val all = listOf("aaa", "baa", "aab", "abb", "bab")
+
+    val dropDownOptions = remember{mutableStateOf(listOf<String>())}
+    val textFieldValue = remember{mutableStateOf(TextFieldValue())}
+    val dropDownExpanded = remember{mutableStateOf(false)}
     TextFieldWithDropdown(
-        value = text.value,
+        value = textFieldValue.value,
         modifier = Modifier.fillMaxWidth(),
         setValue = {
-            text.value = it
+            textFieldValue.value = it
             dropDownExpanded.value = true
        },
         onItemSelect = {str, i->
-            text.value = str
+            textFieldValue.value = TextFieldValue(str, TextRange(str.length))
             dropDownExpanded.value = true
         },
         onDismissRequest = {dropDownExpanded.value = false},

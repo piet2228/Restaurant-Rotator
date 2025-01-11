@@ -21,6 +21,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
@@ -30,6 +31,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -93,21 +96,39 @@ class locationViewModel @Inject constructor(
 ) : ViewModel() {
     private val _location = MutableStateFlow<Location?>(null)
     private val _autoCompleteSuggestions = MutableStateFlow<List<AutocompletePrediction>>(emptyList())
-    private val _searchText = MutableStateFlow("")
+    private val _searchText = MutableStateFlow(TextFieldValue())
     private val _suggestedPlace = MutableStateFlow(Place.builder().build())
+    private val _expanded = MutableStateFlow(false)
 
     val location : StateFlow<Location?> = _location.asStateFlow()
     val autoCompleteSuggestions: StateFlow<List<AutocompletePrediction>> = _autoCompleteSuggestions.asStateFlow()
     val searchText = _searchText.asStateFlow()
     val suggestedPlace = _suggestedPlace.asStateFlow()
+    val expanded = _expanded.asStateFlow()
 
-    fun updateSearchText(string: String){
-        _searchText.value = string
+    fun updateSearchText(textFieldValue: TextFieldValue){
+        _searchText.value = textFieldValue
         viewModelScope.launch{
             launch{
-                updateAutoCompleteSuggestions(string)
+                updateAutoCompleteSuggestions(textFieldValue.text)
             }
         }
+        _expanded.value = true
+    }
+    fun onDropDownSelect(string: String, i: Int){
+        updateSuggestedPlace(autoCompleteSuggestions.value[i])
+        updateSearchText(TextFieldValue(string, TextRange(string.length)))
+    }
+    fun updateSuggestedPlace(prediction: AutocompletePrediction){
+        viewModelScope.launch{
+            val result = placeRepository.getPlaceDetails(prediction.placeId)
+            if (result != null){
+                _suggestedPlace.value = result
+            }
+        }
+    }
+    fun onDismiss(){
+        _expanded.value = false
     }
     //Returns false if permission check fails
     fun getLocation(): Boolean{
@@ -140,14 +161,7 @@ class locationViewModel @Inject constructor(
         val results = placeRepository.getAutoCompletePredictions(input)
         _autoCompleteSuggestions.value = results
     }
-    fun updateSuggestedPlace(prediction: AutocompletePrediction){
-        viewModelScope.launch{
-            val result = placeRepository.getPlaceDetails(prediction.placeId)
-            if (result != null){
-                _suggestedPlace.value = result
-            }
-        }
-    }
+
 }
 //TODO: request location perms in UI?
 @OptIn(ExperimentalMaterial3Api::class)
@@ -191,7 +205,7 @@ fun MainContent(
                 .padding(innerPadding),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            var expanded by remember { mutableStateOf(false)}
+            var expanded = viewModel.expanded.collectAsState()
             val searchText = viewModel.searchText.collectAsState()
             val suggestions = viewModel.autoCompleteSuggestions.collectAsState()
             val suggestionsAsListOfStrings = suggestions.value
@@ -205,15 +219,12 @@ fun MainContent(
                 value = searchText.value,
                 setValue = {
                     viewModel.updateSearchText(it)
-                    expanded= true
                 },
-                onItemSelect = { str, i ->
-                    viewModel.updateSuggestedPlace(suggestions.value[i])
-                    viewModel.updateSearchText(str)
-                    expanded= true
+                onItemSelect = { string, i ->
+                    viewModel.onDropDownSelect(string, i)
                 },
-                onDismissRequest = {expanded = false},
-                dropDownExpanded = expanded,
+                onDismissRequest = {viewModel.onDismiss()},
+                dropDownExpanded = expanded.value,
                 list = suggestionsAsListOfStrings,
                 label = "Address",
             )

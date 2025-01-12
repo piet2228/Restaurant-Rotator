@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -40,6 +41,7 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.restaurantrotator.repository.LocationRepository
 import com.example.restaurantrotator.repository.PlaceRepository
 import com.example.restaurantrotator.ui.TextFieldWithDropdown
 import com.example.restaurantrotator.ui.theme.RestaurantRotatorTheme
@@ -90,16 +92,18 @@ class LocationForm : ComponentActivity() {
 class locationViewModel @Inject constructor(
     private val fusedLocationProviderClient: FusedLocationProviderClient,
     private val placeRepository: PlaceRepository,
+    private val locationRepository: LocationRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
     private val _location = MutableStateFlow<Location?>(null)
+    private val _locationFail = MutableStateFlow(false)
     private val _autoCompleteSuggestions = MutableStateFlow<List<AutocompletePrediction>>(emptyList())
     private val _searchText = MutableStateFlow(TextFieldValue())
     private val _suggestedPlace = MutableStateFlow(Place.builder().build())
     private val _expanded = MutableStateFlow(false)
     private val _cameraState = MutableStateFlow(CameraPositionState())
     private val _markerState = MutableStateFlow(MarkerState())
-
+    //TODO: split markerState into suggestedMarkerState and currentMarkerState
     val location : StateFlow<Location?> = _location.asStateFlow()
     val autoCompleteSuggestions: StateFlow<List<AutocompletePrediction>> = _autoCompleteSuggestions.asStateFlow()
     val searchText = _searchText.asStateFlow()
@@ -135,31 +139,18 @@ class locationViewModel @Inject constructor(
         _expanded.value = false
     }
     //Returns false if permission check fails
-    fun getLocation(): Boolean{
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return false
+    fun updateLocation(){
+        viewModelScope.launch{
+            val newLocation  = locationRepository.getLastLocation()
+            if (newLocation == null){
+                _locationFail.value = true
+                return@launch
+            }
+            val newLatlang = LatLng(newLocation.latitude, newLocation.longitude)
+            _markerState.value = MarkerState(position = newLatlang)
+            _cameraState.value = CameraPositionState(position =CameraPosition(newLatlang, 15f, 0f, 0f))
+
         }
-        fusedLocationProviderClient.lastLocation.addOnSuccessListener() { location: Location? ->
-            _location.value = location
-        }
-        return true
-    }
-    private fun hasLocationPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED ||
-        ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
     }
     suspend fun updateAutoCompleteSuggestions(input: String){
         val results = placeRepository.getAutoCompletePredictions(input)
@@ -178,6 +169,7 @@ fun MainContent(
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(location, 1f)
     }
+    RequestLocationPermissionUsingRememberLauncherForActivityResult({},{})
     Scaffold(
         topBar = {
             TopAppBar(
@@ -252,7 +244,7 @@ fun MainContent(
                     )
                 }
                 FilledIconButton(
-                    onClick = {},
+                    onClick = {viewModel.updateLocation()},
                     modifier = Modifier.align(Alignment.TopEnd),
                     enabled = true
                 ) {

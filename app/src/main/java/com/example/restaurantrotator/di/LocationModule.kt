@@ -1,6 +1,8 @@
 package com.example.restaurantrotator.di
 
 import android.content.Context
+import com.example.restaurantrotator.repository.LocationRepository
+import com.example.restaurantrotator.repository.LocationRepositoryImpl
 import com.example.restaurantrotator.repository.PlaceRepository
 import com.example.restaurantrotator.repository.PlaceRepositoryImpl
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -20,6 +22,11 @@ object LocationModule {
     @Singleton
     fun provideFusedLocationProviderClient(@ApplicationContext context: Context): FusedLocationProviderClient {
         return LocationServices.getFusedLocationProviderClient(context)
+    }
+    @Provides
+    @Singleton
+    fun provideLocationRepository(fusedLocationProviderClient: FusedLocationProviderClient, @ApplicationContext context: Context): LocationRepository{
+        return LocationRepositoryImpl(fusedLocationProviderClient, context)
     }
     @Provides
     @Singleton

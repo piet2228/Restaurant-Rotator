@@ -41,6 +41,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.restaurantrotator.repository.PlaceRepository
+import com.example.restaurantrotator.ui.TextFieldWithDropdown
 import com.example.restaurantrotator.ui.theme.RestaurantRotatorTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.maps.model.CameraPosition

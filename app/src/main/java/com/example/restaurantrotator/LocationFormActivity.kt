@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -41,6 +42,7 @@ import com.example.restaurantrotator.repository.PlaceRepository
 import com.example.restaurantrotator.ui.TextFieldWithDropdown
 import com.example.restaurantrotator.ui.theme.RestaurantRotatorTheme
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.Places
@@ -98,6 +100,8 @@ class LocationFormViewModel @Inject constructor(
     private val _expanded = MutableStateFlow(false)
     private val _cameraState = MutableStateFlow(CameraPositionState())
     private val _markerState = MutableStateFlow(MarkerState())
+    private val _userLocationMarkerState = MutableStateFlow(MarkerState())
+    private val _placeMarkerState = MutableStateFlow(MarkerState())
     //TODO: split markerState into suggestedMarkerState and currentMarkerState
     val location : StateFlow<Location?> = _location.asStateFlow()
     val autoCompleteSuggestions: StateFlow<List<AutocompletePrediction>> = _autoCompleteSuggestions.asStateFlow()
@@ -106,6 +110,8 @@ class LocationFormViewModel @Inject constructor(
     val expanded = _expanded.asStateFlow()
     val cameraState = _cameraState.asStateFlow()
     val markerState = _markerState.asStateFlow()
+    val userLocationMarkerState = _userLocationMarkerState.asStateFlow()
+    val placeMarkerState = _placeMarkerState.asStateFlow()
 
     fun updateSearchText(textFieldValue: TextFieldValue){
         _searchText.value = textFieldValue
@@ -126,7 +132,7 @@ class LocationFormViewModel @Inject constructor(
             if (result != null){
                 _suggestedPlace.value = result
                 _cameraState.value = CameraPositionState(position = CameraPosition(result.latLng,15f,0f,0f))
-                _markerState.value = MarkerState(position = result.latLng)
+                _placeMarkerState.value = MarkerState(position = result.latLng)
             }
         }
     }
@@ -141,15 +147,29 @@ class LocationFormViewModel @Inject constructor(
                 _locationFail.value = true
                 return@launch
             }
+            _locationFail.value = false
+            _location.value = newLocation
             val newLatlang = LatLng(newLocation.latitude, newLocation.longitude)
-            _markerState.value = MarkerState(position = newLatlang)
+            _userLocationMarkerState.value = MarkerState(position = newLatlang)
             _cameraState.value = CameraPositionState(position =CameraPosition(newLatlang, 15f, 0f, 0f))
 
         }
     }
     suspend fun updateAutoCompleteSuggestions(input: String){
-        val results = placeRepository.getAutoCompletePredictions(input)
-        _autoCompleteSuggestions.value = results
+        if (_location.value != null){
+            val results = placeRepository.getAutoCompletePredictions(input, locationToLatLng(
+                _location.value!!
+            ))
+            _autoCompleteSuggestions.value = results
+        }
+        else{
+            val results = placeRepository.getAutoCompletePredictions(input)
+            _autoCompleteSuggestions.value = results
+        }
+
+    }
+    private fun locationToLatLng(loc: Location) : LatLng{
+        return LatLng(loc.latitude,loc.longitude)
     }
 
 }
@@ -173,7 +193,7 @@ fun MainContent(
                     titleContentColor = MaterialTheme.colorScheme.primary,
                 ),
                 title = {
-                    Text("Top app bar")
+                    Text("Enter a valid location")
                 }
             )
         },
@@ -210,7 +230,7 @@ fun MainContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextFieldWithDropdown(
-                    modifier = Modifier.weight(9f),
+                    modifier = Modifier.weight(7f),
                     value = searchText.value,
                     setValue = {
                         viewModel.updateSearchText(it)
@@ -223,7 +243,6 @@ fun MainContent(
                     list = suggestionsAsListOfStrings,
                     label = "Address",
                 )
-
             }
             Box(
                 modifier = Modifier.fillMaxSize()
@@ -233,9 +252,15 @@ fun MainContent(
                     cameraPositionState = viewModel.cameraState.collectAsState().value,
                 ) {
                     Marker(
-                        state = viewModel.markerState.collectAsState().value,
-                        title = "Current Place",
+                        state = viewModel.placeMarkerState.collectAsState().value,
+                        title = "Location of place you are adding",
                         snippet = "Enter a valid address to change"
+                    )
+                    Marker(
+                        state = viewModel.userLocationMarkerState.collectAsState().value,
+                        title = "Your current location",
+                        snippet = "Adjusts auto complete results to be closer to you",
+                        alpha = 0.6f
                     )
                 }
                 FilledIconButton(

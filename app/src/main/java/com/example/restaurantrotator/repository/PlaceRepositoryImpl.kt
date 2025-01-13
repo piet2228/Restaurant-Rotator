@@ -19,11 +19,8 @@ import javax.inject.Inject
 class PlaceRepositoryImpl @Inject constructor(private val placesClient: PlacesClient) :
     PlaceRepository {
     override suspend fun getAutoCompletePredictions(input: String): List<AutocompletePrediction> {
-        val center = LatLng(49.25, -123.11)
-        val circle = CircularBounds.newInstance(center, /* radius = */ 5000.0);
         val request = FindAutocompletePredictionsRequest.builder()
             .setQuery(input)
-            .setLocationRestriction(circle)
             .build()
         try {
             val response = placesClient.findAutocompletePredictions(request).await()
@@ -48,7 +45,7 @@ class PlaceRepositoryImpl @Inject constructor(private val placesClient: PlacesCl
         val circle = CircularBounds.newInstance(location, /* radius = */ 5000.0);
         val request = FindAutocompletePredictionsRequest.builder()
             .setQuery(input)
-            .setLocationRestriction(circle)
+            .setLocationBias(circle)
             .build()
         try {
             val response = placesClient.findAutocompletePredictions(request).await()

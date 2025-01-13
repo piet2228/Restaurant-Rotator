@@ -1,12 +1,9 @@
 package com.example.restaurantrotator
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -36,8 +33,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -89,7 +84,7 @@ class LocationForm : ComponentActivity() {
     }
 }
 @HiltViewModel
-class locationViewModel @Inject constructor(
+class LocationFormViewModel @Inject constructor(
     private val fusedLocationProviderClient: FusedLocationProviderClient,
     private val placeRepository: PlaceRepository,
     private val locationRepository: LocationRepository,
@@ -162,7 +157,7 @@ class locationViewModel @Inject constructor(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainContent(
-    viewModel: locationViewModel = hiltViewModel<locationViewModel>()
+    viewModel: LocationFormViewModel = hiltViewModel<LocationFormViewModel>()
 ) {
     val location = LatLng(0.0,0.0)
     val singaporeMarkerState = rememberMarkerState(position = location)

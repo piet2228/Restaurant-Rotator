@@ -1,9 +1,7 @@
 package com.example.restaurantrotator
 
-import android.content.Context
 import android.location.Location
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -40,10 +38,8 @@ import com.example.restaurantrotator.repository.LocationRepository
 import com.example.restaurantrotator.repository.PlaceRepository
 import com.example.restaurantrotator.ui.TextFieldWithDropdown
 import com.example.restaurantrotator.ui.theme.RestaurantRotatorTheme
-import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.android.libraries.places.api.model.Place
 import com.google.maps.android.compose.CameraPositionState
@@ -54,7 +50,6 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -65,19 +60,7 @@ import javax.inject.Inject
 class LocationForm : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // TODO: Move API check to App class if possible
-        // Define a variable to hold the Places API key.
-        val apiKey = BuildConfig.MAPS_API_KEY
-        // Log an error if apiKey is not set.
-        if (apiKey.isEmpty() || apiKey == "DEFAULT_API_KEY") {
-            Log.e("Places test", "No api key")
-            finish()
-            return
-        }
-        // Initialize the SDK
-        Places.initializeWithNewPlacesApiEnabled(applicationContext, apiKey)
-        // Create a new PlacesClient instance
-        val placesClient = Places.createClient(this)
+
         enableEdgeToEdge()
         setContent {
             MainContent()
@@ -87,8 +70,7 @@ class LocationForm : ComponentActivity() {
 @HiltViewModel
 class LocationFormViewModel @Inject constructor(
     private val placeRepository: PlaceRepository,
-    private val locationRepository: LocationRepository,
-    @ApplicationContext private val context: Context
+    private val locationRepository: LocationRepository
 ) : ViewModel() {
     private val _location = MutableStateFlow<Location?>(null)
     private val _locationFail = MutableStateFlow(false)
@@ -128,6 +110,7 @@ class LocationFormViewModel @Inject constructor(
         viewModelScope.launch{
             val result = placeRepository.getPlaceDetails(prediction.placeId)
             if (result != null ){
+                //TODO handle latlng null case
                 _suggestedPlace.value = result
                 _cameraState.value = CameraPositionState(position = CameraPosition(result.latLng,15f,0f,0f))
                 _placeMarkerState.value = MarkerState(position = result.latLng)
@@ -177,11 +160,6 @@ class LocationFormViewModel @Inject constructor(
 fun MainContent(
     viewModel: LocationFormViewModel = hiltViewModel<LocationFormViewModel>()
 ) {
-    val location = LatLng(0.0,0.0)
-    val singaporeMarkerState = rememberMarkerState(position = location)
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(location, 1f)
-    }
     RequestLocationPermissionUsingRememberLauncherForActivityResult({},{})
     Scaffold(
         topBar = {

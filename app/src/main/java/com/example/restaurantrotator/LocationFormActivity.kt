@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -42,7 +41,6 @@ import com.example.restaurantrotator.repository.PlaceRepository
 import com.example.restaurantrotator.ui.TextFieldWithDropdown
 import com.example.restaurantrotator.ui.theme.RestaurantRotatorTheme
 import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.Places
@@ -67,6 +65,7 @@ import javax.inject.Inject
 class LocationForm : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // TODO: Move API check to App class if possible
         // Define a variable to hold the Places API key.
         val apiKey = BuildConfig.MAPS_API_KEY
         // Log an error if apiKey is not set.
@@ -87,7 +86,6 @@ class LocationForm : ComponentActivity() {
 }
 @HiltViewModel
 class LocationFormViewModel @Inject constructor(
-    private val fusedLocationProviderClient: FusedLocationProviderClient,
     private val placeRepository: PlaceRepository,
     private val locationRepository: LocationRepository,
     @ApplicationContext private val context: Context
@@ -129,7 +127,7 @@ class LocationFormViewModel @Inject constructor(
     fun updateSuggestedPlace(prediction: AutocompletePrediction){
         viewModelScope.launch{
             val result = placeRepository.getPlaceDetails(prediction.placeId)
-            if (result != null){
+            if (result != null ){
                 _suggestedPlace.value = result
                 _cameraState.value = CameraPositionState(position = CameraPosition(result.latLng,15f,0f,0f))
                 _placeMarkerState.value = MarkerState(position = result.latLng)

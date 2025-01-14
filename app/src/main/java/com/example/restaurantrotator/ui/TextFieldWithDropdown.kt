@@ -63,10 +63,7 @@ fun TextFieldWithDropdown(
 
 @Preview
 @Composable
-fun preview() {
-    val all = listOf("aaa", "baa", "aab", "abb", "bab")
-
-    val dropDownOptions = remember{mutableStateOf(listOf<String>())}
+fun Preview() {
     val textFieldValue = remember{mutableStateOf(TextFieldValue())}
     val dropDownExpanded = remember{mutableStateOf(false)}
     TextFieldWithDropdown(
@@ -83,7 +80,7 @@ fun preview() {
         onDismissRequest = {dropDownExpanded.value = false},
         dropDownExpanded = dropDownExpanded.value,
         list = listOf("AAA", "BBB", "CCC"),
-        label = "LABEL",
+        label = "LABEL"
     )
 }
 //TODO keep it in focus

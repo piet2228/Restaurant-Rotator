@@ -3,10 +3,8 @@ package com.example.restaurantrotator.repository
 import android.util.Log
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.android.libraries.places.api.model.CircularBounds
-import com.google.android.libraries.places.api.model.LocationBias
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
@@ -42,7 +40,7 @@ class PlaceRepositoryImpl @Inject constructor(private val placesClient: PlacesCl
         input: String,
         location: LatLng
     ): List<AutocompletePrediction> {
-        val circle = CircularBounds.newInstance(location, /* radius = */ 5000.0);
+        val circle = CircularBounds.newInstance(location, /* radius = */ 5000.0)
         val request = FindAutocompletePredictionsRequest.builder()
             .setQuery(input)
             .setLocationBias(circle)
@@ -73,7 +71,7 @@ class PlaceRepositoryImpl @Inject constructor(private val placesClient: PlacesCl
         } catch (e: Exception) {
             Log.e("PlacesRepository", "Unexpected error", e)
         }
-        return null;
+        return null
     }
 
     override suspend fun getTextSearch(input: String, location: LatLng): List<Place> {

@@ -24,6 +24,6 @@ class LocationRepositoryImpl @Inject constructor(
         ) {
              return null
         }
-        return fusedLocationProviderClient.getLastLocation().await()
+        return fusedLocationProviderClient.lastLocation.await()
     }
 }

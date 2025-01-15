@@ -106,7 +106,6 @@ class RestaurantViewModel : ViewModel() {
         _displayTimeDialog.value = true
         _dialogDay.value = dayOfWeek
         _dialogForOpen.value = changeOpeningTime
-        val hours = restaurantData.value.weeklySchedule[dayOfWeek.ordinal]
     }
     fun confirmTimeDialog(timePickerState: TimePickerState){
         val weeklySchedule = restaurantData.value.weeklySchedule
